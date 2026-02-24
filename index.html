@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Instâncias</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light Theme */
+            --bg-base: #f8f9fa;
+            --bg-surface: #ffffff;
+            --bg-surface-elevated: #f1f3f5;
+            --text-primary: #111118;
+            --text-secondary: #646470;
+            --border-color: #e9ecef;
+            --color-green: #00E676;
+            --color-red: #FF4757;
+            --color-amber: #FFB300;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --modal-overlay: rgba(0, 0, 0, 0.3);
+            --mesh-opacity: 0.3;
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg-base: #0A0A0F;
+            --bg-surface: #111118;
+            --bg-surface-elevated: #1A1A24;
+            --text-primary: #ffffff;
+            --text-secondary: #8c8c9c;
+            --border-color: #2a2a35;
+            --glass-bg: rgba(17, 17, 24, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.05);
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+            --modal-overlay: rgba(0, 0, 0, 0.7);
+            --mesh-opacity: 0.15;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Subtle mesh gradient background */
+        .background-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 15% 50%, rgba(0, 230, 118, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(0, 100, 255, 0.05) 0%, transparent 50%);
+            opacity: var(--mesh-opacity);
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        header {
+            padding: 2rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .last-update {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-right: 1rem;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            border-radius: 8px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon {
+            background: var(--bg-surface-elevated);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-icon:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-refresh {
+            background: var(--bg-surface-elevated);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-refresh:hover {
+            background: var(--border-color);
+        }
+
+        .btn-connect {
+            background: rgba(0, 230, 118, 0.1);
+            color: var(--color-green);
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(0, 230, 118, 0.2);
+            width: 100%;
+        }
+
+        .btn-connect:hover {
+            background: rgba(0, 230, 118, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 230, 118, 0.15);
+        }
+
+        .btn-disconnect {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--color-red);
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            width: 100%;
+        }
+
+        .btn-disconnect:hover {
+            background: rgba(255, 71, 87, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.15);
+        }
+
+        .btn-primary {
+            background: var(--text-primary);
+            color: var(--bg-base);
+            padding: 0.6rem 1.2rem;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-surface-elevated);
+            color: var(--text-primary);
+            padding: 0.6rem 1.2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        main {
+            flex: 1;
+            padding: 3rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .instances-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .instance-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+        }
+
+        .instance-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--border-color);
+        }
+
+        /* Subtle lighting effect on the cards */
+        .instance-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0) 100%);
+            pointer-events: none;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .instance-name {
+            font-size: 1.15rem;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.online {
+            background: rgba(0, 230, 118, 0.1);
+            color: var(--color-green);
+        }
+
+        .status-badge.offline {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--color-red);
+        }
+
+        .status-badge.connecting {
+            background: rgba(255, 179, 0, 0.1);
+            color: var(--color-amber);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .online .status-dot {
+            background: var(--color-green);
+            box-shadow: 0 0 8px var(--color-green);
+            animation: pulse-green 2s infinite;
+        }
+
+        .offline .status-dot {
+            background: var(--color-red);
+        }
+
+        .connecting .status-dot {
+            background: var(--color-amber);
+            animation: pulse-amber 1.5s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(0, 230, 118, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+            }
+        }
+
+        @keyframes pulse-amber {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Shimmer Loading State */
+        .skeleton {
+            background: var(--bg-surface-elevated);
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        [data-theme="light"] .skeleton::after {
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.03), transparent);
+        }
+
+        @keyframes shimmer {
+            100% {
+                left: 100%;
+            }
+        }
+
+        .skeleton-text {
+            height: 22px;
+            width: 60%;
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-badge {
+            height: 26px;
+            width: 80px;
+            border-radius: 100px;
+        }
+
+        .skeleton-button {
+            height: 42px;
+            width: 100%;
+            border-radius: 8px;
+            margin-top: auto;
+        }
+
+        /* Modals */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--modal-overlay);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-md);
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .modal-backdrop.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .btn-close {
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-close:hover {
+            background: var(--bg-surface-elevated);
+            color: var(--text-primary);
+        }
+
+        .qr-container {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 250px;
+            border: 2px solid var(--border-color);
+            position: relative;
+        }
+
+        .qr-container img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+        }
+
+        .qr-instruction {
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        /* Toasts */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid var(--color-green);
+            color: var(--text-primary);
+            padding: 1.25rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transform: translateX(120%);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+            opacity: 0;
+            font-size: 0.95rem;
+            max-width: 400px;
+            word-break: break-word;
+            line-height: 1.5;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .toast.error {
+            border-left-color: var(--color-red);
+        }
+
+        .toast.info {
+            border-left-color: var(--color-amber);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .toast-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--color-amber);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        [data-theme="dark"] .spinner {
+            border-color: rgba(255, 255, 255, 0.1);
+            border-top-color: var(--color-amber);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        footer a {
+            color: var(--color-green);
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s, text-shadow 0.2s;
+        }
+
+        footer a:hover {
+            opacity: 1;
+            text-decoration: underline;
+            text-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+        }
+
+        /* State message */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+
+        .error-message {
+            color: var(--color-red);
+            padding: 1rem;
+            background: rgba(255, 71, 87, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            text-align: center;
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+                padding: 1.5rem;
+            }
+
+            .header-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .toast-container {
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+            }
+
+            .toast {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-mesh"></div>
+
+    <header>
+        <div class="header-title" style="letter-spacing: -0.5px;">
+            Gerenciador de Instâncias
+        </div>
+        <div class="header-controls">
+            <span class="header-datetime" id="current-datetime-text"
+                style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary); margin-right: 1.5rem; opacity: 0.9;"></span>
+            <span class="last-update" id="last-update-text">Atualizado agora</span>
+            <button class="btn-refresh" id="btn-refresh" title="Atualizar conexão">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+                Atualizar
+            </button>
+            <button class="btn-icon" id="btn-theme" title="Alternar tema">
+                <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5" />
+                    <path
+                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42 1.42" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div class="instances-grid" id="instances-grid">
+            <!-- Skeletons load here initially -->
+            <div class="instance-card skeleton-card">
+                <div class="card-header">
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-badge"></div>
+                </div>
+                <div class="skeleton skeleton-button"></div>
+            </div>
+            <div class="instance-card skeleton-card">
+                <div class="card-header">
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-badge"></div>
+                </div>
+                <div class="skeleton skeleton-button"></div>
+            </div>
+            <div class="instance-card skeleton-card">
+                <div class="card-header">
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-badge"></div>
+                </div>
+                <div class="skeleton skeleton-button"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        Desenvolvido por Nathan Quiem. <a href="https://nathanquiem.com.br" target="_blank"
+            rel="noopener noreferrer">Conheça meu trabalho</a>
+    </footer>
+
+    <!-- QR Code Modal -->
+    <div class="modal-backdrop" id="qr-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Conectar Instância</h3>
+                <button class="btn-close" onclick="closeModal('qr-modal')">&times;</button>
+            </div>
+            <div class="qr-container" id="qr-container">
+                <div class="spinner"></div>
+            </div>
+            <p class="qr-instruction" id="qr-instruction">
+                Aguarde, solicitando QR code da Evolution API...
+            </p>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('qr-modal')">Fechar</button>
+                <button class="btn-primary" id="btn-new-qr" disabled>Novo QR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disconnect Modal -->
+    <div class="modal-backdrop" id="disconnect-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Desconectar WhatsApp?</h3>
+                <button class="btn-close" onclick="closeModal('disconnect-modal')">&times;</button>
+            </div>
+            <p class="qr-instruction" style="text-align: left;">
+                Tem certeza que deseja desconectar a instância <strong id="disconnect-instance-name"
+                    style="color:var(--text-primary);"></strong>? O aplicativo perderá a conexão atual com o WhatsApp.
+            </p>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('disconnect-modal')">Cancelar</button>
+                <button class="btn-disconnect" id="btn-confirm-disconnect" style="width: auto; flex: 1;">Sim,
+                    Desconectar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toasts Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // CONFIGURATION
+        const BASE_URL = 'https://n8n.maxifolia.cloud/webhook';
+        const REFRESH_INTERVAL_SECONDS = 30;
+
+        // STATE
+        let instances = [];
+        let autoRefreshTimer = null;
+        let lastUpdateTime = new Date();
+        let activeInstance = null; // For modals
+        let isPinging = false;
+
+        // DOM ELEMENTS
+        const instancesGrid = document.getElementById('instances-grid');
+        const themeBtn = document.getElementById('btn-theme');
+        const themeIcon = document.getElementById('theme-icon');
+        const refreshBtn = document.getElementById('btn-refresh');
+        const lastUpdateText = document.getElementById('last-update-text');
+
+        // MODAL ELEMENTS
+        const qrModal = document.getElementById('qr-modal');
+        const qrContainer = document.getElementById('qr-container');
+        const qrInstruction = document.getElementById('qr-instruction');
+        const btnNewQr = document.getElementById('btn-new-qr');
+
+        const disconnectModal = document.getElementById('disconnect-modal');
+        const disconnectInstanceName = document.getElementById('disconnect-instance-name');
+        const btnConfirmDisconnect = document.getElementById('btn-confirm-disconnect');
+
+        // THEME TOGGLE
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+
+            // Update icon
+            if (newTheme === 'dark') {
+                themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42 1.42"/>';
+            } else {
+                themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+            }
+        }
+
+        themeBtn.addEventListener('click', toggleTheme);
+
+        // TOAST NOTIFICATIONS
+        function showToast(message, type = 'success', title = null) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = '';
+            let defaultTitle = '';
+
+            if (type === 'success') {
+                icon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+                defaultTitle = 'Desconectado!';
+            } else if (type === 'error') {
+                icon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                defaultTitle = 'Erro';
+            } else if (type === 'info') {
+                icon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+                defaultTitle = 'Aviso Importante';
+            }
+
+            const displayTitle = title || defaultTitle;
+
+            toast.innerHTML = `
+                <div class="toast-icon" style="color: var(--color-${type === 'success' ? 'green' : type === 'error' ? 'red' : 'amber'})">${icon}</div>
+                <div class="toast-content" style="display:flex; flex-direction:column; gap:4px;">
+                    <strong class="toast-title" style="font-size: 1.05rem;">${displayTitle}</strong>
+                    <div class="toast-message" style="opacity: 0.9; font-size:0.9rem;">${message}</div>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Remove after 6s (increased time since texts are longer)
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400); // Wait for transition
+            }, 6000);
+        }
+
+        // TIME FORMATTER
+        function updateClock() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('current-datetime-text').textContent = `${dateStr} • ${timeStr}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function updateTimeAgo() {
+            const now = new Date();
+            const diffSeconds = Math.floor((now - lastUpdateTime) / 1000);
+
+            if (diffSeconds < 5) {
+                lastUpdateText.textContent = 'Atualizado agora';
+            } else if (diffSeconds < 60) {
+                lastUpdateText.textContent = `Atualizado há ${diffSeconds}s`;
+            } else {
+                const mins = Math.floor(diffSeconds / 60);
+                lastUpdateText.textContent = `Atualizado há ${mins}m`;
+            }
+        }
+
+        setInterval(updateTimeAgo, 5000);
+
+        // API CALLS
+        async function fetchInstances(showSkeleton = true) {
+            if (isPinging) return;
+            isPinging = true;
+
+            if (showSkeleton) renderSkeletons();
+
+            try {
+                const response = await fetch(`${BASE_URL}/instancias/listar`);
+                if (!response.ok) throw new Error('Falha de rede (Status ' + response.status + ')');
+
+                const json = await response.json();
+
+                if (json.success && Array.isArray(json.data)) {
+                    instances = json.data.map(item => ({
+                        name: item.name || item.instanceName || (item.instance && item.instance.instanceName) || 'Desconhecida',
+                        status: item.connectionStatus || item.status || (item.instance && item.instance.status) || 'close'
+                    }));
+                    renderInstances();
+
+                    lastUpdateTime = new Date();
+                    updateTimeAgo();
+                } else {
+                    throw new Error(json.error || 'Formato de resposta inesperado da API.');
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+                if (showSkeleton) {
+                    instancesGrid.innerHTML = `<div class="error-message">Não foi possível carregar as instâncias: ${error.message}</div>`;
+                }
+                showToast("Erro ao carregar lista de instâncias", "error");
+            } finally {
+                isPinging = false;
+            }
+        }
+
+        async function doConnectInstance(instanceName) {
+            qrContainer.innerHTML = '<div class="spinner"></div>';
+            qrInstruction.textContent = 'Solicitando QR Code...';
+            btnNewQr.disabled = true;
+
+            try {
+                const response = await fetch(`${BASE_URL}/instancias/conectar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instanceName })
+                });
+
+                const data = await response.json();
+
+                if (data.success && (data.qrcode || data.base64)) {
+                    const qrImage = data.qrcode || data.base64;
+                    const src = qrImage.startsWith('data:') ? qrImage : `data:image/png;base64,${qrImage}`;
+
+                    qrContainer.innerHTML = `<img src="${src}" alt="QR Code" />`;
+                    qrInstruction.innerHTML = 'Escaneie o QR Code no seu <strong>WhatsApp</strong> para conectar a instância.';
+                    btnNewQr.disabled = false;
+                } else {
+                    throw new Error(data.error || 'Falha ao obter QR code. Pode já estar conectado.');
+                }
+            } catch (error) {
+                console.error("Connect error:", error);
+                qrContainer.innerHTML = `
+                    <div style="text-align: center; color: var(--color-red);">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                        <p style="font-size: 0.95rem; font-weight: 500;">${error.message}</p>
+                    </div>
+                `;
+                qrInstruction.textContent = 'Feche o modal e tente se conectar novamente ou atualize a lista para checar o status.';
+                btnNewQr.disabled = false;
+            }
+        }
+
+        async function doDisconnectInstance(instanceName) {
+            const originalText = btnConfirmDisconnect.textContent;
+            btnConfirmDisconnect.innerHTML = '<div class="spinner" style="width: 18px; height: 18px; border-top-color: var(--color-red); margin-right: 8px;"></div> Desconectando...';
+            btnConfirmDisconnect.disabled = true;
+
+            try {
+                const response = await fetch(`${BASE_URL}/instancias/desconectar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instanceName })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(`A instância <strong>"${instanceName}"</strong> recebeu o comando de logout.<br><em>Nota: Pode haver um delay de até 1 minuto para que a desconexão reflita completamente na Evolution API.</em>`, 'info', 'Desconectando...');
+                    closeModal('disconnect-modal');
+                    fetchInstances(false);
+                } else {
+                    throw new Error(data.error || 'Erro ao tentar desconectar através da API.');
+                }
+            } catch (error) {
+                console.error("Disconnect error:", error);
+                showToast(error.message, "error");
+            } finally {
+                btnConfirmDisconnect.textContent = originalText;
+                btnConfirmDisconnect.disabled = false;
+            }
+        }
+
+        // UI RENDERERS
+        function renderSkeletons() {
+            instancesGrid.innerHTML = Array(3).fill(`
+                <div class="instance-card skeleton-card">
+                    <div class="card-header">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-badge"></div>
+                    </div>
+                    <div class="skeleton skeleton-button"></div>
+                </div>
+            `).join('');
+        }
+
+        function renderInstances() {
+            if (instances.length === 0) {
+                instancesGrid.innerHTML = `
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4; margin-bottom: 1rem; color: var(--color-amber)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <p style="font-size:1.1rem; font-weight: 500;">Nenhuma instância encontrada</p>
+                        <p style="font-size:0.9rem; margin-top: 0.5rem; opacity: 0.7;">Verifique com o administrador se já foram criadas na API.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            instancesGrid.innerHTML = instances.map(inst => {
+                const isOnline = inst.status === 'open';
+                const isConnecting = inst.status === 'connecting';
+
+                let badgeClass = 'offline';
+                let badgeText = 'Offline';
+                let actionButton = `<button class="btn-connect" onclick="openConnectModal('${inst.name}')">Conectar Instância</button>`;
+
+                if (isOnline) {
+                    badgeClass = 'online';
+                    badgeText = 'Online';
+                    actionButton = `<button class="btn-disconnect" onclick="openDisconnectModal('${inst.name}')">Desconectar Instância</button>`;
+                } else if (isConnecting) {
+                    badgeClass = 'connecting';
+                    badgeText = 'Conectando';
+                    actionButton = `<button class="btn-connect" onclick="openConnectModal('${inst.name}')">Gerar Novo QR Code</button>`;
+                }
+
+                return `
+                    <div class="instance-card">
+                        <div class="card-header">
+                            <div class="instance-name" title="${inst.name}">${inst.name}</div>
+                            <div class="status-badge ${badgeClass}">
+                                <div class="status-dot"></div>
+                                ${badgeText}
+                            </div>
+                        </div>
+                        <div style="margin-top: auto;">
+                            ${actionButton}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // MODAL CONTROLLERS
+        function openConnectModal(instanceName) {
+            activeInstance = instanceName;
+            document.getElementById('qr-modal').classList.add('active');
+            doConnectInstance(instanceName);
+        }
+
+        function openDisconnectModal(instanceName) {
+            activeInstance = instanceName;
+            disconnectInstanceName.textContent = instanceName;
+            document.getElementById('disconnect-modal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+
+            // if we are closing QR modal, trigger a background refresh to catch connection state silently
+            if (modalId === 'qr-modal') {
+                setTimeout(() => fetchInstances(false), 800);
+            }
+        }
+
+        // EVENT LISTENERS
+        refreshBtn.addEventListener('click', () => {
+            const icon = refreshBtn.querySelector('svg');
+            icon.style.animation = 'spin 1s linear';
+            setTimeout(() => icon.style.animation = '', 1000);
+            // hard refresh with skeleton
+            fetchInstances(true);
+        });
+
+        btnNewQr.addEventListener('click', () => {
+            if (activeInstance) doConnectInstance(activeInstance);
+        });
+
+        btnConfirmDisconnect.addEventListener('click', () => {
+            if (activeInstance) doDisconnectInstance(activeInstance);
+        });
+
+        // Close modal on click outside
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-backdrop')) {
+                // Determine which modal inside event
+                const id = e.target.id;
+                closeModal(id);
+            }
+        });
+
+        // INITIALIZATION
+        function init() {
+            // First run
+            fetchInstances(true);
+
+            // Setup auto-refresh
+            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+            autoRefreshTimer = setInterval(() => fetchInstances(false), REFRESH_INTERVAL_SECONDS * 1000);
+        }
+
+        // Start App
+        init();
+    </script>
+</body>
+
+</html>
