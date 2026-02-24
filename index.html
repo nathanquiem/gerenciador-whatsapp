@@ -760,7 +760,20 @@
 
     <script>
         // CONFIGURATION
-        const BASE_URL = 'https://n8n.maxifolia.cloud/webhook';
+        // URL Parameter handling allows the same HTML code/deployment
+        // to be used by multiple clients just by changing the link they access
+        function getBaseUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const customUrl = urlParams.get('url');
+            if (customUrl) {
+                // Ensure no trailing slash
+                return customUrl.endsWith('/') ? customUrl.slice(0, -1) : customUrl;
+            }
+            // Fallback default
+            return 'https://n8n.maxifolia.cloud/webhook';
+        }
+
+        const BASE_URL = getBaseUrl();
         const REFRESH_INTERVAL_SECONDS = 30;
 
         // STATE
